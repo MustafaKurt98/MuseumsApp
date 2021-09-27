@@ -143,5 +143,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    public void save(View view){
+
+    }
+
+    public void delete(View view){
+
+    }
 
 }
