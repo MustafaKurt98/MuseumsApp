@@ -14,7 +14,7 @@
         map:layout_constraintEnd_toEndOf="parent"
         map:layout_constraintStart_toStartOf="parent"
         map:layout_constraintTop_toTopOf="parent"
-        tools:context=".MapsActivity" />
+        tools:context=".view.MapsActivity" />
 
     <EditText
         android:id="@+id/museumNameText"
@@ -37,6 +37,7 @@
         android:layout_marginStart="128dp"
         android:layout_marginEnd="128dp"
         android:layout_marginBottom="8dp"
+        android:onClick="delete"
         android:text="Sil"
         map:layout_constraintBottom_toBottomOf="parent"
         map:layout_constraintEnd_toEndOf="parent"
@@ -49,6 +50,7 @@
         android:layout_marginStart="128dp"
         android:layout_marginEnd="128dp"
         android:layout_marginBottom="8dp"
+        android:onClick="save"
         android:text="Kaydet"
         map:layout_constraintBottom_toTopOf="@+id/deleteButton"
         map:layout_constraintEnd_toEndOf="parent"
