@@ -7,9 +7,13 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
+import androidx.room.Index;
+import androidx.room.Room;
+import androidx.room.RoomDatabase;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -28,6 +32,14 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.material.snackbar.Snackbar;
 import com.mustafakurt.museumsapp.R;
 import com.mustafakurt.museumsapp.databinding.ActivityMapsBinding;
+import com.mustafakurt.museumsapp.model.Place;
+import com.mustafakurt.museumsapp.roomdb.PlaceDao;
+import com.mustafakurt.museumsapp.roomdb.PlaceDatabase;
+
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapLongClickListener {
 
@@ -38,9 +50,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     LocationListener locationListener;
     SharedPreferences sharedPreferences;
     boolean info;
-//    SharedPreferences sharedPreferences=MapsActivity.this.getSharedPreferences("com.mustafakurt.museumsapp",MODE_PRIVATE);
+    PlaceDatabase db;
+    PlaceDao placeDao;
+    Double selectedLatitude;
+    Double selectedLongitude;
+    //    disposable kullan-at olarak kullanilabilir
+    private CompositeDisposable compositeDisposable = new CompositeDisposable();
 
-//  harita oluşturulduğunda çalışanlar
+    //  harita oluşturulduğunda çalışanlar
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,6 +73,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        //kucuk bilgilerimizi SharedPreferences altında kaydedebiliyoruz
         sharedPreferences = this.getSharedPreferences("com.mustafakurt.museumsapp", MODE_PRIVATE);
         info = false;
+
+        db = Room.databaseBuilder(getApplicationContext(), PlaceDatabase.class, "Places").build();
+        placeDao = db.placeDao();
+
+        selectedLatitude = 0.0;
+        selectedLongitude = 0.0;
     }
 
     //    harita hazır olduğunda onMapReady cagırılır
@@ -63,6 +86,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         mMap.setOnMapLongClickListener(this);
+
+//        kayıt butonu bir yer secilmeden önce en basta inaktif durumda yaptık
+        binding.saveButton.setEnabled(false);
 
         //location manager -> konum servisleri
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
@@ -133,7 +159,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
     }
 
-//  haritada uzun tıklama ile çalışanlar
+    //  haritada uzun tıklama ile çalışanlar
     @Override
     public void onMapLongClick(@NonNull LatLng latLng) {
 //      koyulan isaretcileri harita uzerinden temizler
@@ -141,14 +167,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //      harita uzerine isaretci yerlestirir
         mMap.addMarker(new MarkerOptions().position(latLng));
 
-    }
+        selectedLatitude = latLng.latitude;
+        selectedLongitude = latLng.longitude;
 
-    public void save(View view){
-
-    }
-
-    public void delete(View view){
+//        kullanıcı bir yer secemeden kayıt butonu inaktif olsun
+        binding.saveButton.setEnabled(true);
 
     }
 
+    public void save(View view) {
+        Place place = new Place(binding.museumNameText.getText().toString(), selectedLatitude, selectedLongitude);
+        placeDao.insert(place);
+        compositeDisposable.add(placeDao.insert(place).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(MapsActivity.this::handleResponse));
+
+    }
+
+    private void handleResponse() {
+        Intent intent = new Intent(MapsActivity.this, UserInterface.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(intent);
+    }
+
+    public void delete(View view) {
+//        compositeDisposable.add(placeDao.delete().subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(MapsActivity.this::handleResponse));
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        compositeDisposable.clear();
+    }
 }
