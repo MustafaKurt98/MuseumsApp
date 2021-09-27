@@ -67,6 +67,7 @@ public class UserInterface extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.add_museum) {
             Intent intent = new Intent(UserInterface.this, MapsActivity.class);
+            intent.putExtra("info","new");
             startActivity(intent);
         }
         return super.onOptionsItemSelected(item);
